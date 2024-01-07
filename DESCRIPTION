@@ -13,3 +13,5 @@ Imports:
     Matrix,
     ggplot2,
     stats
+URL: https://github.com/puchen8229/EMPBOOTSTRP
+BugReports: https://github.com/puchen8229/EMPBOOTSTRP/issues
