@@ -227,5 +227,23 @@ bstrp <- function(Model,nrun,Method,T)
   return(resid.BOOT)
 }
 
+#' Multivariate normal random series
+#'
+#' This function will generate iid multivariate normal random time series.
+#'
+#' @param T Length of the generated time series
+#' @param sigma An (n x n) covariance matrix of the normal series
+#' @return T x n matrix of iid normal time series
+#' @export
+#' @keywords internal
+rnormSIGMA = function(T,sigma) {
+  # generate random numbers from iid multivariate normal distribution with covariance matrix Sigma
+  sigma = as.matrix(sigma)
+  n = dim(sigma)[1]
+  U = stats::rnorm(T*n)
+  dim(U) = c(T,n)
+  U = U%*%chol(sigma)
+  return(U)
+}
 
 
