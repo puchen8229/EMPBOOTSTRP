@@ -64,19 +64,103 @@ set of normal data is used in this simple scenario.
 
 ![H_o: Co = 2  \hspace{1cm} H_a: Co \ne 2. \hspace{2cm}   H_o: Sigma = 1.5  \hspace{1cm} H_a: Sigma \ne 1.5](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_o%3A%20Co%20%3D%202%20%20%5Chspace%7B1cm%7D%20H_a%3A%20Co%20%5Cne%202.%20%5Chspace%7B2cm%7D%20%20%20H_o%3A%20Sigma%20%3D%201.5%20%20%5Chspace%7B1cm%7D%20H_a%3A%20Sigma%20%5Cne%201.5 "H_o: Co = 2  \hspace{1cm} H_a: Co \ne 2. \hspace{2cm}   H_o: Sigma = 1.5  \hspace{1cm} H_a: Sigma \ne 1.5")
 
-    #> 
-    #> Attaching package: 'EMPBOOTSTRP'
-    #> The following object is masked from 'package:methods':
-    #> 
-    #>     Summary
-    #>       5%      95%       Co 
-    #> 1.025410 1.246133 1.139207 
-    #>        5%       95%     Sigma 
-    #> 0.9141204 1.2747132 1.0805961 
-    #>         5%        95%    Cshare1 
-    #> -0.9745900 -0.7538668 -0.8607930 
-    #>         5%        95%    Cshare2 
-    #> -0.5858796 -0.2252868 -0.4194039
+``` r
+library(EMPBOOTSTRP)
+#> 
+#> Attaching package: 'EMPBOOTSTRP'
+#> The following object is masked from 'package:methods':
+#> 
+#>     Summary
+
+
+Data = rnorm(200)*1.2+1.9    #### this is pretended to be a set of real world data. 
+
+#### set up a Model skeleton with an arbitrary PARAM
+
+ENDOG = NA
+n = 1
+EXOG = NA
+Co = 1
+Sigma = as.matrix(1.0)
+H_PARAM = list(n)
+PARAM   = list(Co,Sigma);names(PARAM) = c("Co","Sigma")
+resid   = NA
+RD      = c("norm")
+INI = NA
+AIC = NA
+BIC = NA
+INFOC = list(AIC,BIC)
+EXTRA = NA
+Model = list(H_PARAM,PARAM,INFOC,ENDOG,EXOG,resid,RD,INI,EXTRA)
+names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+
+
+dgp = function(Model,T, M=1)
+{
+      Co    = Model$PARAM[[1]]
+      Sigma = Model$PARAM[[2]]
+
+      if ( Model$RD=="resid" )  {
+               resid = as.matrix(Model$resid)
+      }
+      if  ( Model$RD  == "norm" ) {
+              resid = as.matrix(rnorm(T))%*%as.matrix(sqrt(Sigma))
+      }
+      Y = Co + resid
+      Model$ENDOG   = as.matrix(Y)
+      Model$resid   = as.matrix(resid)
+    return(Model)
+}
+
+est = function(Model=DGP) {
+## this is a program estimating VAR(p) with exogenous variables via LS
+  n       = Model$H_PARAM[[1]]
+  Y       = Model$ENDOG
+  Co      = mean(Y)
+  Sigma   = var(Y)
+    T       = length(Model$ENDOG)
+  PARAM   = list(Co,Sigma);   names(PARAM) = c("Co","Sigma")
+  Model$PARAM = PARAM
+
+  AIC =   2*2-2*(-(T*n/2)*log(2*pi) -(T*n/2) +(T/2)*log(det(solve(Sigma))))
+  BIC =   log(T)*2- 2*(-(T*n/2)*log(2*pi) -(T*n/2) +(T/2)*log(det(solve(Sigma))))
+  INFOC = list(AIC,BIC); names(INFOC) =c("AIC","BIC")
+  Model$INFOC = INFOC
+    return(Model)
+}
+
+
+Cshareo = c(0,0)*NA
+PRP.PARAM = list(Cshareo); names(PRP.PARAM) = c("Cshareo")
+
+prp = function(Model,PRP.PARAM)
+{
+     n = Model$H_PARAM[[1]]
+      Co = Model$PARAM[[1]]
+      Sigma = as.matrix(Model$PARAM[[2]])
+      Cshare=c(Co[1]-2,Sigma[1,1]-1.5)
+      results = list(Cshare)
+      names(results) = c("Cshare")
+      return(results)
+}
+
+DGP = MODEL.DGP(Model=Model,T=200,M=1)
+EST <- MODEL.EST(Model=DGP)
+
+Cshareo <- prp(EST,PRP.PARAM)
+PRP.PARAM = list(Cshareo); names(PRP.PARAM) = c("Cshareo")
+
+#######
+PRP <- prp(EST,PRP.PARAM)
+
+
+Method = "norm"
+nrun   = 200
+bootresult = MODEL.BOOT(EST,PRP,PRP.PARAM,nrun,Method)
+
+
+SM<-Summary(OUT = bootresult,Model=EST,PRP.PARAM)
+```
 
 The following test result
 
@@ -131,87 +215,162 @@ value of the statistic under the null is saved as Cshareo. Together with
 nstep=25 and irf = “gen”, they are parameters of the prp function stored
 as PRP.PARAM.
 
-    #> 
-    #> Attaching package: 'MRCIGVAR'
-    #> The following object is masked from 'package:EMPBOOTSTRP':
-    #> 
-    #>     rnormSIGMA
-    #>        5%       95%        B1 
-    #> 0.7430947 1.1471535 0.9654235 
-    #>          5%         95%          B2 
-    #> -0.34953053  0.01230942 -0.16843708 
-    #>         5%        95%         B3 
-    #> -0.4041992  0.1301326 -0.1317298 
-    #>          5%         95%          B4 
-    #> -0.25368475  0.12595580 -0.06882476 
-    #>          5%         95%          B5 
-    #> -0.09104374  0.12508939  0.02278788 
-    #>        5%       95%        B6 
-    #> 0.5724811 0.7726370 0.6929769 
-    #>          5%         95%          B7 
-    #> -0.07662586  0.18819416  0.04452551 
-    #>           5%          95%           B8 
-    #> -0.184072806  0.003376805 -0.082865994 
-    #>          5%         95%          B9 
-    #> -0.07403882  0.21580210  0.04787154 
-    #>          5%         95%         B10 
-    #> -0.13655162  0.13751811 -0.01294483 
-    #>        5%       95%       B11 
-    #> 0.4862774 0.8708559 0.7185744 
-    #>          5%         95%         B12 
-    #> -0.08465464  0.17682576  0.05511280 
-    #>         5%        95%        B13 
-    #> 0.01776906 0.36312992 0.19776507 
-    #>          5%         95%         B14 
-    #> -0.29859863  0.05655937 -0.09165609 
-    #>          5%         95%         B15 
-    #> -0.32075538  0.07053775 -0.13170047 
-    #>        5%       95%       B16 
-    #> 0.3614951 0.6760220 0.5306371 
-    #>         5%        95%        Co1 
-    #> -4.0519805 -0.0872687 -1.8203637 
-    #>        5%       95%       Co2 
-    #> 0.3057427 4.3202893 2.1831132 
-    #>       5%      95%      Co3 
-    #> 1.037901 6.796262 3.387238 
-    #>       5%      95%      Co4 
-    #> 1.537227 5.470635 3.306539 
-    #>       5%      95%   Sigma1 
-    #> 4.743729 6.801619 5.680833 
-    #>        5%       95%    Sigma2 
-    #> -2.245304 -0.868161 -1.580811 
-    #>        5%       95%    Sigma3 
-    #> -7.327770 -4.889811 -5.917286 
-    #>        5%       95%    Sigma4 
-    #> -5.391652 -3.668100 -4.413563 
-    #>        5%       95%    Sigma5 
-    #> -2.245304 -0.868161 -1.580811 
-    #>       5%      95%   Sigma6 
-    #> 5.242945 7.191711 6.065193 
-    #>         5%        95%     Sigma7 
-    #> -1.0417243  0.6636157 -0.1288327 
-    #>       5%      95%   Sigma8 
-    #> 2.406571 3.912121 3.106344 
-    #>        5%       95%    Sigma9 
-    #> -7.327770 -4.889811 -5.917286 
-    #>         5%        95%    Sigma10 
-    #> -1.0417243  0.6636157 -0.1288327 
-    #>       5%      95%  Sigma11 
-    #> 7.024817 9.890725 8.168765 
-    #>       5%      95%  Sigma12 
-    #> 2.449601 4.554197 3.418928 
-    #>        5%       95%   Sigma13 
-    #> -5.391652 -3.668100 -4.413563 
-    #>       5%      95%  Sigma14 
-    #> 2.406571 3.912121 3.106344 
-    #>       5%      95%  Sigma15 
-    #> 2.449601 4.554197 3.418928 
-    #>       5%      95%  Sigma16 
-    #> 4.546985 6.322632 5.343449 
-    #>         5%        95%            
-    #> 0.03185504 0.51200400 0.27244666
+``` r
+library(EMPBOOTSTRP)
+library(MRCIGVAR)
+#> 
+#> Attaching package: 'MRCIGVAR'
+#> The following object is masked from 'package:EMPBOOTSTRP':
+#> 
+#>     rnormSIGMA
 
-<img src="man/figures/README-example1-1.png" width="100%" /><img src="man/figures/README-example1-2.png" width="100%" /><img src="man/figures/README-example1-3.png" width="100%" />
+##### implementation of the three functions  dgp, est, prp
+
+dgp = function(Model,T, M=2)
+{
+      n     = Model$H_PARAM[[1]]
+      p     = Model$H_PARAM[[2]]
+      type  = Model$H_PARAM[[3]]
+      B     = Model$PARAM[[1]]
+      Co    = Model$PARAM[[2]]
+      Sigma = Model$PARAM[[3]]
+      U     = Model$resid
+      r_np  = NA
+      A     = NA
+      X     = Model$EXOG
+      mu    = NA
+
+      if ( Model$RD=="resid" )  {
+               resid = as.matrix(Model$resid)
+      }
+      if  ( Model$RD  == "norm" ) {
+            if  (anyNA(Sigma))  { resid = matrix(rnorm(T*n),T,n) }
+              else            { resid =  rnormSIGMA(T,Sigma)   }
+      }
+
+      ENDOG = as.matrix(resid)
+      if ( !is.na(sum(Model$INI)) )   { ENDOG[1:p,] = as.matrix(Model$INI) }
+      Yo = Model$INI
+      res_d = VARData(n,p,T,r_np,A,B,Co,U,Sigma,type,X,mu,Yo)
+
+        H_PARAM = Model$H_PARAM
+      PARAM   = list(res_d$B,res_d$Co,res_d$Sigma)
+      INFOC   = Model$INFOC
+      ENDOG   = res_d$Y
+      EXOG    = res_d$X
+      resid   = res_d$resid
+      RD      = Model$RD
+      INI     = Model$INI
+      EXTRA   = res_d
+      Model   = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
+      names(Model) = c("H_PARAM","PARAM","INFOC", "ENDOG","EXOG","resid","RD","INI","EXTRA")
+    return(Model)
+}
+
+est = function(Model) {
+## this is a program estimating VAR(p) with exogenous variables via LS
+  res_d   = Model$EXTRA
+  res_e   = VARest(res_d)
+    T       = dim(Model$ENDOG)[1]
+    Model   = Model
+    Sigma   = res_e$Sigma
+    resid       = res_e$resid
+  B       = res_e$B
+  Co      = res_e$Co
+  Sigma   = res_e$Sigma
+  PARAM   = list(B,Co,Sigma); names(PARAM) =c("B","Co","Sigma")
+  AIC =   2*(n*n*p+n*(n+1)/2)-2*(-(T*n/2)*log(2*pi) -(T*n/2) +(T/2)*log(det(solve(Sigma))))
+  BIC =   log(T)*(n*n*p+n*(n+1)/2)- 2*(-(T*n/2)*log(2*pi) -(T*n/2) +(T/2)*log(det(solve(Sigma))))
+  INFOC = list(AIC,BIC)
+  EXTRA = res_e
+    Model = list(Model$H_PARAM,PARAM,INFOC,Model$ENDOG,Model$EXOG,resid,Model$RD,Model$INI,EXTRA)
+    names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+    return(Model)
+}
+
+
+
+
+# Model = EST
+nstep = 25
+
+irf = "gen"
+Cshareo =c(0)
+PRP.PARAM = list(nstep,irf,Cshareo); names(PRP.PARAM) = c("nstep","irf","Cshareo")
+
+prp = function(Model,PRP.PARAM)
+{
+      B = Model$PARAM[[1]]
+      p = Model$H_PARAM[[2]]
+      n = Model$H_PARAM[[1]]
+      BB = B; dim(BB) = c(n,n,p)
+      Cshare=c(BB[1,1,1]-BB[2,2,1])
+      irf = PRP.PARAM[[2]]
+      nstep = PRP.PARAM[[1]]
+      IRF   = matrix(0,n,n*nstep)
+      dim(IRF) = c(n,n,nstep);
+      dim(B) = c(n,n,p);
+      resid = Model$resid
+      sigma0 = t(resid)%*%resid/(nrow(resid)-ncol(resid)*p)
+      IRF  <- irf_B_sigma(B,sigma0,nstep,irf=irf)
+      results = list(Cshare,IRF)
+      names(results) = c("Cshare","IRF")
+      return(results)
+}
+
+
+
+ENDOG = NA
+T = 400
+n = 4
+EXOG = NA
+p = 1
+B = matrix(0,n,n*p)
+B = diag(c(0.8,0.8,0.8,0.7)); dim(B) = c(n,n,p)
+Co = c(1:4)*0.5
+type ="const"
+H_PARAM = list(n,p,type)
+Sigma   = NA
+PARAM   = list(B,Co,Sigma)
+
+resid   = NA
+RD      = c("norm")
+#INI     = ENDOG[1:p,]
+INI = NA
+AIC = NA
+BIC = NA
+INFOC = list(AIC,BIC)
+EXTRA = NA
+Model = list(H_PARAM,PARAM,INFOC,ENDOG,EXOG,resid,RD,INI,EXTRA)
+names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+
+
+
+#######
+# dgp(Model=Model,T=200,M=4)
+
+DGP = MODEL.DGP(Model=Model,T=200,M=4)
+# Model = DGP
+EST <- MODEL.EST(Model=DGP)
+
+
+### obtain the test statistic under the null hypothesis.
+Cshareo =  prp(EST,PRP.PARAM)$Cshare
+
+
+PRP.PARAM = list(nstep,irf,Cshareo); names(PRP.PARAM) = c("nstep","irf","Cshareo")
+
+
+Method = "norm"
+nrun   = 200
+
+bootresult = MODEL.BOOT(EST,PRP,PRP.PARAM,nrun,Method)
+
+SM<-Summary(OUT = bootresult,Model=EST,PRP.PARAM)
+
+IRF_list <-IRF_graph(SM[[3]])
+IRF_list <-IRF_graph(SM[[4]])
+```
 
 ## Example 2
 
@@ -222,148 +381,218 @@ respectively. In the prp function, we test a parameter restriction:
 
 ![H_0: B\_{1,1,1}-B\_{2,2,1}=0 \hspace{1cm} H_a: B\_{1,1,1}-B\_{2,2,1}\ne0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_0%3A%20B_%7B1%2C1%2C1%7D-B_%7B2%2C2%2C1%7D%3D0%20%5Chspace%7B1cm%7D%20H_a%3A%20B_%7B1%2C1%2C1%7D-B_%7B2%2C2%2C1%7D%5Cne0 "H_0: B_{1,1,1}-B_{2,2,1}=0 \hspace{1cm} H_a: B_{1,1,1}-B_{2,2,1}\ne0")
 
-<img src="man/figures/README-example2-1.png" width="100%" />
+``` r
 
-    #>           5%          95%       alpha1 
-    #> -0.112375761 -0.002314335 -0.063396401 
-    #>         5%        95%     alpha2 
-    #> 0.06273887 0.14420123 0.10199015 
-    #>         5%        95%     alpha3 
-    #> -0.2390733 -0.1358917 -0.1895426 
-    #>          5%         95%      alpha4 
-    #> -0.03346993  0.05924724  0.01886379 
-    #>         5%        95%     alpha5 
-    #> -0.6624615 -0.4410797 -0.5202489 
-    #>        5%       95%    alpha6 
-    #> 0.0756710 0.2552762 0.1553945 
-    #>          5%         95%      alpha7 
-    #> -0.09395654  0.16024088  0.03744202 
-    #>        5%       95%    alpha8 
-    #> 0.2633241 0.4791848 0.3586063 
-    #>    5%   95% beta1 
-    #>     1     1     1 
-    #>        5%       95%     beta2 
-    #> -3.119848 -2.769585 -2.917810 
-    #>       5%      95%    beta3 
-    #> 6.099198 6.914543 6.434876 
-    #>         5%        95%      beta4 
-    #> -0.6957423 -0.6410555 -0.6685874 
-    #>    5%   95% beta5 
-    #>     1     1     1 
-    #>          5%         95%       beta6 
-    #> -0.04038479  0.30536426  0.11526853 
-    #>         5%        95%      beta7 
-    #> -1.1244206 -0.2893974 -0.6746511 
-    #>         5%        95%      beta8 
-    #> -0.8529865 -0.6189605 -0.7383234 
-    #>        5%       95%        B1 
-    #> 0.1130123 0.3358706 0.2292445 
-    #>          5%         95%          B2 
-    #> -0.25924147 -0.09231787 -0.18726060 
-    #>         5%        95%         B3 
-    #> -0.4755448 -0.2321130 -0.3638298 
-    #>        5%       95%        B4 
-    #> 0.1424288 0.3368579 0.2342375 
-    #>          5%         95%          B5 
-    #> -0.38570722 -0.04760673 -0.22209542 
-    #>        5%       95%        B6 
-    #> 0.8703594 1.1182423 0.9823261 
-    #>        5%       95%        B7 
-    #> 0.4865708 0.8047001 0.6662644 
-    #>         5%        95%         B8 
-    #> -0.6467605 -0.3560806 -0.5258742 
-    #>         5%        95%         B9 
-    #> -0.4528259 -0.1228550 -0.2963103 
-    #>        5%       95%       B10 
-    #> 0.5654707 0.8157992 0.6935498 
-    #>          5%         95%         B11 
-    #> -0.29428147  0.05272314 -0.13174197 
-    #>         5%        95%        B12 
-    #> -0.3705288 -0.1166986 -0.2232374 
-    #>        5%       95%       B13 
-    #> 0.2242021 0.4769167 0.3367617 
-    #>         5%        95%        B14 
-    #> -0.7729259 -0.5944620 -0.6913774 
-    #>           5%          95%          B15 
-    #> -0.105209400  0.136235616 -0.004235984 
-    #>        5%       95%       B16 
-    #> 0.3978273 0.6157230 0.5204513 
-    #>         5%        95%        B17 
-    #> 0.05607824 0.28536310 0.18711017 
-    #>        5%       95%       B18 
-    #> 0.3348481 0.5361177 0.4446452 
-    #>         5%        95%        B19 
-    #> 0.07435833 0.32344666 0.21172929 
-    #>         5%        95%        B20 
-    #> 0.03687616 0.26597001 0.14323252 
-    #>        5%       95%       B21 
-    #> 0.2806499 0.4418592 0.3471058 
-    #>         5%        95%        B22 
-    #> -0.3308628 -0.1963313 -0.2620019 
-    #>           5%          95%          B23 
-    #> -0.195800812 -0.008590515 -0.108899269 
-    #>        5%       95%       B24 
-    #> 0.4125109 0.5801350 0.5121692 
-    #>         5%        95%        B25 
-    #> 0.07203018 0.42285330 0.23934883 
-    #>          5%         95%         B26 
-    #> -0.28836757  0.00115081 -0.14209289 
-    #>          5%         95%         B27 
-    #> -0.29501448  0.07862591 -0.11320121 
-    #>         5%        95%        B28 
-    #> -0.1021001  0.2616344  0.1026895 
-    #>          5%         95%         B29 
-    #> -0.04064226  0.21910337  0.08973624 
-    #>        5%       95%       B30 
-    #> 0.4024167 0.5895884 0.5084566 
-    #>          5%         95%         B31 
-    #> -0.04349409  0.21027387  0.10331743 
-    #>        5%       95%       B32 
-    #> 0.1079252 0.3088722 0.2021692 
-    #>         5%        95%        Co1 
-    #> -1.3386730  0.4476171 -0.4003673 
-    #>         5%        95%        Co2 
-    #> -1.2524649 -0.1265266 -0.6976946 
-    #>       5%      95%      Co3 
-    #> 1.824123 3.106030 2.514003 
-    #>         5%        95%        Co4 
-    #> -0.1396423  1.3483529  0.5579952 
-    #>       5%      95%   Sigma1 
-    #> 4.069152 5.743075 5.164115 
-    #>         5%        95%     Sigma2 
-    #> -0.6812284  0.1147689 -0.3191738 
-    #>         5%        95%     Sigma3 
-    #> -1.1762115  0.1857124 -0.5298856 
-    #>         5%        95%     Sigma4 
-    #> -1.7946190 -0.6938678 -1.3602579 
-    #>         5%        95%     Sigma5 
-    #> -0.6812284  0.1147689 -0.3191738 
-    #>       5%      95%   Sigma6 
-    #> 2.605143 3.639719 3.281893 
-    #>       5%      95%   Sigma7 
-    #> 2.427680 3.621264 3.177336 
-    #>       5%      95%   Sigma8 
-    #> 1.646982 2.584910 2.235170 
-    #>         5%        95%     Sigma9 
-    #> -1.1762115  0.1857124 -0.5298856 
-    #>       5%      95%  Sigma10 
-    #> 2.427680 3.621264 3.177336 
-    #>       5%      95%  Sigma11 
-    #> 4.613210 6.744338 5.903299 
-    #>           5%          95%      Sigma12 
-    #> -1.123946659  0.005104834 -0.573632339 
-    #>         5%        95%    Sigma13 
-    #> -1.7946190 -0.6938678 -1.3602579 
-    #>       5%      95%  Sigma14 
-    #> 1.646982 2.584910 2.235170 
-    #>           5%          95%      Sigma15 
-    #> -1.123946659  0.005104834 -0.573632339 
-    #>       5%      95%  Sigma16 
-    #> 3.760415 5.019450 4.635705 
-    #>         5%        95%            
-    #> -0.9116111 -0.6100339 -0.7530816
+##### implementation of the three functions  dgp, est, prp
 
-<img src="man/figures/README-example2-2.png" width="100%" /><img src="man/figures/README-example2-3.png" width="100%" />
+
+ENDOG = NA
+EXOG  = NA
+n     = 4
+p     = 2
+B     = c(1:(n*n*p))*NA; dim(B) = c(n,n,p)     
+Co    = NA
+Sigma = NA                       #Sigma = diag(c(1,2))
+type  = "const"
+crk   = 2
+H_PARAM = list(n,p,type,crk)
+alpha   = NA
+beta    = NA
+
+PARAM   = list(alpha,beta,B,Co,Sigma); names(PARAM) = c("alpha","beta","B","Co","Sigma")
+AIC     = NA
+BIC     = NA
+INFOC   = list(AIC,BIC)
+resid   = NA
+RD      = c("norm")
+INI     = NA                                             #INI     = ENDOG[1:p,]
+EXTRA   = NA                                   #an extra element to for convenience
+Model = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
+names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+
+T = 200
+
+##### implementation of the three functions  dgp, est, prp
+
+dgp = function(Model,T, M)
+{
+  n     = Model$H_PARAM[[1]]
+  p     = Model$H_PARAM[[2]]
+  type  = Model$H_PARAM[[3]]
+  crk   = Model$H_PARAM[[4]]
+  alpha = Model$PARAM[[1]]
+  beta  = Model$PARAM[[2]]
+  B     = Model$PARAM[[3]]
+  Co    = Model$PARAM[[4]]
+  Sigma = Model$PARAM[[5]]
+  U     = Model$resid
+  r_np  = NA
+  A     = NA
+  X     = Model$EXOG
+  mu    = NA
+
+  if ( Model$RD=="resid" )  {
+    resid = as.matrix(Model$resid)
+  }
+  if  ( Model$RD  == "norm" ) {
+    if  (anyNA(Sigma))  { resid = matrix(rnorm(T*n),T,n) }
+    else            { resid =  rnormSIGMA(T,Sigma)   }
+  }
+
+  ENDOG = as.matrix(resid)
+  if ( !is.na(sum(Model$INI)) )   { ENDOG[1:p,] = as.matrix(Model$INI) }
+  Yo = Model$INI
+  C1 = NA
+  res_d = CIVARData(n,p,T,r_np,A,B,Co,C1,U,Sigma,type,X,mu,Yo,crk)
+
+  H_PARAM = Model$H_PARAM
+  alpha = NA
+  beta  = NA
+  PARAM   = list(alpha,beta,res_d$B,res_d$Co,res_d$Sigma); names(PARAM) = c("alpha", "beta" , "B","Co","Sigma")
+  INFOC   = Model$INFOC
+  ENDOG   = res_d$Y
+  EXOG    = res_d$X
+  resid   = res_d$resid
+  RD      = Model$RD
+  INI     = Model$INI
+  EXTRA   = res_d
+  Model   = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
+  names(Model) = c("H_PARAM","PARAM","INFOC", "ENDOG","EXOG","resid","RD","INI","EXTRA")
+  return(Model)
+}
+
+
+
+est = function(Model) {
+  ## this is a program estimating VAR(p) with exogenous variables via LS
+  res_d   = Model$EXTRA
+  res_e   = CIVARest(res_d)
+  T       = dim(Model$ENDOG)[1]
+  Model   = Model
+  Sigma     = res_e$Sigma
+  resid     = res_e$resid
+  B       = res_e$B
+  Co      = res_e$Co
+  Sigma   = res_e$Sigma
+
+  beta    = res_e$tst$beta
+  crk     = Model$H_PARAM[[4]]
+  alpha   = t(res_e$tst$estimation$coefficients[1:crk,])
+
+  PARAM   = list(alpha,beta,B,Co,Sigma);names(PARAM) = c("alpha","beta","B","Co","Sigma")
+  AIC     = 2     *(n*n*p+n*(n+1)/2-n*n-crk*crk+2*n*crk)- 2*(-(T*n/2)*log(2*pi) -(T*n/2) +(T/2)*log(det(solve(Sigma))))
+  BIC     = log(T)*(n*n*p+n*(n+1)/2-n*n-crk*crk+2*n*crk)- 2*(-(T*n/2)*log(2*pi) -(T*n/2) +(T/2)*log(det(solve(Sigma))))
+  INFOC   = list(AIC,BIC)
+  EXTRA   = res_e
+  Model   = list(Model$H_PARAM,PARAM,INFOC,Model$ENDOG,Model$EXOG,resid,Model$RD,Model$INI,EXTRA)
+  names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+  return(Model)
+}
+
+#MODEL.EST <- function(Model)
+#{
+#
+#  estimate = est(Model)
+#  Model$PARAM = estimate$PARAM
+#  Model$resid = estimate$resid
+#  Model$INFOC = estimate$INFOC
+#  return(Model)
+#}
+
+
+### not run
+#DGP = MODEL.DGP(Model,T=200,M=2)
+#Model = DGP
+#EST <- MODEL.EST(DGP)
+
+
+### not run
+nstep = 20
+irf = "gen"
+Cshareo = NA
+PRP.PARAM = list(nstep,irf,Cshareo)
+names(PRP.PARAM) = c("nstep","irf","Cshareo")
+
+prp = function(Model,PRP.PARAM)
+{
+  B = Model$PARAM[[3]]
+  p = Model$H_PARAM[[2]]
+  n = Model$H_PARAM[[1]]
+  Cshare=c(B[1,1,1]-B[2,2,1])
+  irf = PRP.PARAM[[2]]
+  nstep = PRP.PARAM[[1]]
+  IRF   = matrix(0,n,n*nstep)
+  dim(IRF) = c(n,n,nstep);
+  dim(B) = c(n,n,p);
+  resid = Model$resid
+  sigma0 = t(resid)%*%resid/(nrow(resid)-ncol(resid)*p)
+  IRF  <- irf_B_sigma(B,sigma0,nstep,irf=irf)
+  results = list(Cshare,IRF)
+  names(results) = c("Cshare","IRF")
+  return(results)
+}
+
+
+### not run
+#DGP = MODEL.DGP(Model,T=200,M=2)
+#Model = DGP
+#EST <- MODEL.EST(DGP)
+#prp(EST,PRP.PARAM)
+
+####### Application a typical procedure: Model construction selection estimation validation application
+#######                                        MODEL.DGP    MODEL.SELECT, MODEL.EST, MODEL.BOOT, MODEL.PRP
+
+ENDOG = NA
+EXOG  = NA
+n     = 4
+p     = 2
+B     = c(1:(n*n*p))*NA; dim(B) = c(n,n,p)     #B = c(0.5,0,0,0.4,0.2,0,0,0.2); dim(B) = c(n,n,p)
+Co    = NA
+Sigma = NA                                     #Sigma = diag(c(1,2))
+type  = "const"
+crk   = 2
+H_PARAM = list(n,p,type,crk)
+alpha   = NA
+beta    = NA
+PARAM   = list(alpha,beta,B,Co,Sigma); names(PARAM) = c("alpha","beta","B","Co","Sigma")
+AIC     = NA
+BIC     = NA
+INFOC   = list(AIC,BIC)
+resid   = NA
+RD      = c("norm")
+INI     = NA                                             #INI     = ENDOG[1:p,]
+EXTRA   = NA                                   #an extra element to for convenience
+Model = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
+names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+
+
+#######
+
+DGP = MODEL.DGP(Model=Model,T=200,M=4)
+
+plot(ts(DGP$ENDOG))
+#Model = DGP
+EST <- MODEL.EST(DGP)
+
+Cshareo = prp(EST,PRP.PARAM)$Cshare
+PRP.PARAM = list(nstep,irf,Cshareo); names(PRP.PARAM) = c("nstep","irf","Cshareo")
+
+
+PRP = MODEL.PRP(EST,PRP.PARAM)
+
+
+
+Method = "residuals"   ### correct Method = "norm"
+nrun   = 200
+#resid.BOOT = bstrp(Model=EST,nrun,Method,T=200)
+
+bootresult = MODEL.BOOT(EST,PRP,PRP.PARAM,nrun,Method)
+
+
+SM<-Summary(OUT = bootresult,Model=EST,PRP.PARAM)
+
+IRF_list <-IRF_graph(SM[[3]])
+```
 
 ## Example 3
 
@@ -377,16 +606,145 @@ In this example our dgp is a logit model
 
 ![H_0: Co = 1 \hspace{1cm} H_1: Co \ne 0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_0%3A%20Co%20%3D%201%20%5Chspace%7B1cm%7D%20H_1%3A%20Co%20%5Cne%200 "H_0: Co = 1 \hspace{1cm} H_1: Co \ne 0")
 
-    #>       5%      95%       X1 
-    #> 1.971239 2.508877 2.102408 
-    #>       5%      95%       X2 
-    #> 3.741136 4.673632 3.983666 
-    #>          5%         95% (Intercept) 
-    #>   0.6912536   1.0960660   0.9526463 
-    #>         5%        95%  Cshare.X1 
-    #> -0.1925626  1.8097869  0.4364546 
-    #>                 5%                95% Cshare.(Intercept) 
-    #>        -0.30874642         0.09606599        -0.04735367
+``` r
+
+##### set up a Model skeleton with given values for PARAM and H_PARAM.
+
+T = 1000
+
+ENDOG   = NA
+EXOG    = matrix(rnorm(T*2),T,2)
+n       = 1
+Bo      = c(2,4)
+Co      = c(1)
+type    = "const"
+H_PARAM = list(n,type); names(H_PARAM) = c("n","type")
+PARAM   = list(Bo,Co); names(PARAM) = c("Bo","Co")
+AIC     = NA
+BIC     = NA
+INFOC   = list(AIC,BIC)
+resid   = NA
+RD      = c("binomial")
+INI     = NA                                             #INI     = ENDOG[1:p,]
+EXTRA   = NA                                   #an extra element to for convenience
+Model = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
+names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+
+Cshareo=c(Bo[1]^2-Bo[2],Co[1]-1)
+
+
+##### implementation of the three functions  dgp, est, prp
+
+dgp = function(Model,T, M)
+{
+  n     = Model$H_PARAM[[1]]
+  type  = Model$H_PARAM[[2]]
+  Bo    = Model$PARAM[[1]]
+  Co    = Model$PARAM[[2]]
+  resid = Model$resid
+  X     = Model$EXOG
+  z     = Co + X[,1]*Bo[1] + X[,2]*Bo[2]        # linear combination with a bias
+  pr    = 1/(1+exp(-z))                         # pass through an inv-logit function
+  YY    = rbinom(T,1,pr)                       # Bernoulli response variable
+  if (anyNA(resid))   resid   = YY - z
+  Y       = as.matrix(as.integer(z+resid))
+  H_PARAM = Model$H_PARAM
+  PARAM   = list(Bo,Co); names(PARAM) = c("Bo","Co")
+  INFOC   = Model$INFOC
+  ENDOG   = Y
+  EXOG    = Model$EXOG
+  RD      = Model$RD
+  INI     = Model$INI
+  EXTRA   = NA
+  Model   = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
+  names(Model) = c("H_PARAM","PARAM","INFOC", "ENDOG","EXOG","resid","RD","INI","EXTRA")
+  return(Model)
+}
+
+
+
+
+
+est = function(Model) {
+  ## this is a program estimating VAR(p) with exogenous variables via LS
+  T       = dim(as.matrix(Model$ENDOG))[1]
+  Y       = Model$ENDOG
+  X       = Model$EXOG
+  Model   = Model
+  type    = Model$H_PARAM$type
+  df      = data.frame(Y,X)
+  if (type=="const") {
+      Fit <- glm( Y~X,data=df,family="binomial")
+      Co = Fit$coefficients[1]
+      Bo = Fit$coefficients[-1]
+  }
+  if (type=="none") {
+      Fit <- glm( Y~0+X,data=df,family="binomial")
+      Co = 0
+      Bo = Fit$coefficients
+  }
+  z     = Co + X%*%Bo
+  resid = Y - z
+
+  SM <- summary(Fit)
+  AIC = SM$aic
+  BIC = SM$aic+length(Fit$coefficients)*(log(T)-2)
+  logLikel    = -(AIC-2*length(Fit$coefficients))/2
+
+  PARAM   = list(Bo,Co)
+  INFOC   = list(AIC,BIC)
+  EXTRA   = NA
+  Model   = list(Model$H_PARAM,PARAM,INFOC,Model$ENDOG,Model$EXOG,resid,Model$RD,Model$INI,EXTRA)
+  names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+  return(Model)
+}
+
+
+
+
+DGP = dgp(Model,T=1000, M=1)
+
+
+#Model = DGP
+EST <- MODEL.EST(Model=DGP)
+
+
+### not run
+
+Cshare = NA
+PRP.PARAM = list(Cshare)
+
+
+
+
+prp = function(Model,PRP.PARAM)
+{
+  Bo = Model$PARAM[[1]]
+  Co = Model$PARAM[[2]]
+  n = Model$H_PARAM[[1]]
+  type = Model$H_PARAM[[2]]
+  BB = Bo;
+  Cshare=c(BB[1]^2-BB[2],Co[1]-1)
+
+  results = list(Cshare)
+  names(results) = c("Cshare")
+  return(results)
+}
+
+
+
+Cshareo = prp(Model=EST,PRP.PARAM)
+PRP.PARAM = list(Cshareo); names(PRP.PARAM) = c("Cshareo")
+
+
+
+Method = "binomial"
+nrun   = 200
+
+bootresult = MODEL.BOOT(Model=EST,PRP,PRP.PARAM,nrun,Method="binomial")
+
+SM<-Summary(OUT = bootresult,Model=EST,PRP.PARAM)
+```
 
 ## Example 4
 
@@ -410,41 +768,295 @@ we test
 
 ![H_0: c_o^{(0)} - c_o^{(1)}=0 C\hspace{1cm} H_1: c_o^{(0)} - c_o^{(1)} \ne 0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_0%3A%20c_o%5E%7B%280%29%7D%20-%20c_o%5E%7B%281%29%7D%3D0%20C%5Chspace%7B1cm%7D%20H_1%3A%20c_o%5E%7B%280%29%7D%20-%20c_o%5E%7B%281%29%7D%20%5Cne%200 "H_0: c_o^{(0)} - c_o^{(1)}=0 C\hspace{1cm} H_1: c_o^{(0)} - c_o^{(1)} \ne 0")
 
-    #> Warning: package 'MSwM' was built under R version 4.0.5
-    #> Loading required package: parallel
-    #> Warning: package 'markovchain' was built under R version 4.0.5
-    #> Package:  markovchain
-    #> Version:  0.8.6
-    #> Date:     2021-05-17
-    #> BugReport: https://github.com/spedygiorgio/markovchain/issues
-    #>          5%         95%         Bo1 
-    #> -0.09591418  0.51368187 -0.49969313 
-    #>         5%        95%        Bo2 
-    #> -0.5769254  0.5060527  0.5014043 
-    #>       5%      95%      Co1 
-    #> 10.95703 20.36163 10.04805 
-    #>       5%      95%      Co2 
-    #> 11.38045 20.62845 10.04744 
-    #>       5%      95%      Co3 
-    #> 19.81254 39.29868 19.91744 
-    #>        5%       95%       Co4 
-    #>  9.341751 20.354954 20.247189 
-    #>         5%        95%     Sigma1 
-    #>  1.2299855 36.9080568  0.4891689 
-    #>        5%       95%    Sigma2 
-    #>  1.324295 37.975113  1.543063 
-    #>        5%       95%        P1 
-    #> 0.3815490 0.7844119 0.7087265 
-    #>        5%       95%        P2 
-    #> 0.2155881 0.6184510 0.2912735 
-    #>        5%       95%        P3 
-    #> 0.2070776 0.6103891 0.2143114 
-    #>        5%       95%        P4 
-    #> 0.3896109 0.7929224 0.7856886 
-    #>         5%        95%    Cshare1 
-    #> -0.6021122  1.1681581 -1.0010974 
-    #>          5%         95%     Cshare2 
-    #> -31.4809401  -0.5512197  -9.8693875
+``` r
+
+##### set up a Model skeleton with given values for PARAM and H_PARAM.
+
+library(MSwM)
+#> Warning: package 'MSwM' was built under R version 4.0.5
+#> Loading required package: parallel
+library(markovchain)
+#> Warning: package 'markovchain' was built under R version 4.0.5
+#> Package:  markovchain
+#> Version:  0.8.6
+#> Date:     2021-05-17
+#> BugReport: https://github.com/spedygiorgio/markovchain/issues
+############################################################################
+
+
+### MSVARData is a function that generates MSVAR data. We use this function in the implementation of dgp
+
+MSVARData=function(n,p,T,S,TM,Bo,Co,Sigmao,Uo,type,mu,X,St) {
+
+  check = c(1:(S+1))*0
+  if (missing(TM)) {
+    TM = matrix(runif(S*S),S,S)
+    TM = t(solve(diag(rowSums(TM)))%*%TM)
+  }
+  if (missing(Bo)&(p>0)) {
+
+    Bo = (1:(n*n*p*S))*0
+    dim(Bo) = c(n,n*p,S)
+    for (i in 1:S) {
+      VARD = VARData(n,p,T)
+      Bo[,,i] = VARD$B
+      check[i] = max(abs(VARD$Y))
+    }
+    dim(Bo) = c(n,n,p,S)
+  } else {
+    if (p==0) Bo = NA
+  }
+  if (missing(Sigmao))  Sigmao = NA
+
+  if (anyNA(Sigmao)) {
+    Sigmao = (1:(n*n*S))*0
+    dim(Sigmao) = c(n,n,S)
+    for (i in 1:S) {
+      VARD = VARData(n,p=1,T)
+      Sigmao[,,i] = VARD$Sigma
+    }
+  }
+
+  if (missing(type)) {
+    type = "none"
+    Co = NA
+  }
+  if (missing(Uo)) Uo = NA
+
+  if (anyNA(Uo)) {
+    Uo = (1:(T*n*S))*0
+    dim(Uo) = c(T,n,S)
+    for (i in 1:S) Uo[,,i]= rnormSIGMA(T,as.matrix(Sigmao[,,i]))
+  }
+  Ct = Uo*0
+
+  if (missing(X))  {
+    X  = NA
+  }
+
+  if (type=="exog1")  {
+    m = dim(X)[2]
+    CC = rnorm(n*(m+1)*S)
+    dim(CC) = c(n,m+1,S)
+    if (missing(Co)) Co = CC
+
+    if (n>1)   for (s in 1:S) Ct[,,s] = cbind(1,X)%*%t(Co[,,s])
+    if (n==1)  for (s in 1:S) Ct[,,s] = cbind(1,X)%*% (Co[,,s])
+  }
+
+  if (type == "const") {
+    if (missing(mu)) { mu = matrix(rnorm(n*S),n,S)}
+    if (missing(Co)) {
+      Co = mu
+      for (s in 1:S) {
+
+        if (p>0) for (L in 1:p) Co[,s] = Co[,s] - Bo[,,L,s]%*%mu[,s]
+        #Ct[,,s] = matrix(1,T,1)%*%t(Co[,s])
+
+      }
+    }  else {
+      mu = Co*NA
+      for (s in 1:S) { H = diag(n) ; if
+      (p>0) for (L in 1:p) H = H - Bo[,,L,s]
+      mu[,s] = solve(H)%*%Co[,s]
+      }
+    }
+    for (s in 1:S) Ct[,,s] = matrix(1,T,1)%*%t(Co[,s])
+  }
+
+  dtmcA <- new("markovchain",transitionMatrix=t(TM)) #   the TM notation in markovchain package is the transpose of HM
+
+  if (missing(St)) St <- markovchainSequence(T, markovchain = dtmcA, t0 = "1")
+
+  Y = as.matrix(Uo[,,1])
+  for ( tt in (p+1):T )  {
+    s = as.numeric(St[tt])
+    Y[tt,] = Uo[tt,,s]+Ct[tt,,s]
+    if (p>0) for (L in 1:p)    Y[tt,] = Y[tt,] + Y[tt-L,]%*%t(Bo[,,L,s])
+  }
+
+  check[S+1] = max(abs(Y))
+  result=list(Y,X,Uo,Bo,Co,Sigmao,TM,St,type,check,n,p,S)
+  names(result) = c("Y","X","Uo","Bo","Co","Sigmao","TM","St","type","check","n","p","S")
+  return(result)
+}
+
+
+
+#### A Model skeleton with gien values in PARAM and H_PARAM and EXOG
+
+
+TT = 300
+
+ENDOG   = NA
+EXOG    = matrix(rnorm(TT),TT,1)
+n       = 1
+p       = 1
+PP      = c(0.7,0.8)
+P       = matrix(c(0.7,0.3,0.2,0.8),2,2)
+S       = 2
+Co      = matrix(c(10,10,20,20),2,2);dim(Co) = c(1,2,2)
+Bo      = matrix(c(-0.5,0.5),1,2); dim(Bo) = c(1,1,1,2)
+Sigmao   = NA                       #Sigma = diag(c(1,2))
+type    = "exog1"
+
+H_PARAM = list(n,p,type,S)
+PARAM   = list(Bo,Co,Sigmao,P); names(PARAM) = c("Bo","Co","Sigmao","P")
+AIC     = NA
+BIC     = NA
+INFOC   = list(AIC,BIC)
+resid   = NA
+RD      = c("norm")
+INI     = NA                                             #INI     = ENDOG[1:p,]
+EXTRA   = NA                                   #an extra element to for convenience
+Model = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
+names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+
+
+
+
+
+##### implementation of the three functions  dgp, est, prp
+
+dgp = function(Model,TT, M)
+{
+  n     = Model$H_PARAM[[1]]
+  p     = Model$H_PARAM[[2]]
+  type  = Model$H_PARAM[[3]]
+  S     = Model$H_PARAM[[4]]
+  Bo    = Model$PARAM[[1]]
+  Co    = Model$PARAM[[2]]
+  Sigmao= Model$PARAM[[3]]
+  P     = Model$PARAM[[4]]
+  resid = Model$resid
+  A     = NA
+  X     = Model$EXOG
+
+  if ( Model$RD=="resid" )  {
+    resid = as.matrix(Model$resid)
+  }
+
+  res_d = MSVARData(n,p,TT,S,TM=P,Bo=Bo,Co=Co,Sigmao=Sigmao,Uo=resid,type=type,X=X)
+
+  Bo      = res_d$Bo
+  Co      = res_d$Co
+  Sigmao  = res_d$Sigmao
+  P       = res_d$TM
+  resid   = res_d$Uo
+  H_PARAM = Model$H_PARAM
+  PARAM   = list(Bo,Co,Sigmao,P);
+  INFOC   = Model$INFOC
+  ENDOG   = res_d$Y
+  EXOG    = Model$EXOG
+  RD      = Model$RD
+  INI     = Model$INI
+  EXTRA   = NA
+  Model   = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
+  names(Model) = c("H_PARAM","PARAM","INFOC", "ENDOG","EXOG","resid","RD","INI","EXTRA")
+  return(Model)
+}
+
+DGP = dgp(Model,TT=300, M=1)
+
+
+Model = DGP
+
+est = function(Model) {
+  ## this is a program estimating VAR(p) with exogenous variables via LS
+  T       = dim(Model$ENDOG)[1]
+  Y       = Model$ENDOG
+  X       = Model$EXOG
+  Example = data.frame(X,Y)
+  Model   = Model
+  p       = Model$H_PARAM[[2]]
+  mod     = lm(Y~X,data=Example)
+  #plot(ts(Example))
+
+  mod.mswm=msmFit(mod,k=2,p=1,sw=c(TRUE,TRUE,TRUE,TRUE),control=list(parallel=FALSE))
+
+  Bo    = Model$PARAM[[1]]
+  Co    = Model$PARAM[[2]]
+  Sigmao= Model$PARAM[[3]]
+  P     = Model$PARAM[[4]]
+  resid = Model$resid
+
+  #### identification of regime by the sign of
+
+  if (mod.mswm@Coef[1,1] < mod.mswm@Coef[2,1]) {
+
+    Bo[,,1,1:2] = mod.mswm@Coef[,3]
+    Co[,,1]     = unlist(mod.mswm@Coef[1,-3])
+    Co[,,2]     = unlist(mod.mswm@Coef[2,-3])
+    Sigmao[,,1] = mod.mswm@std[1]
+    Sigmao[,,2] = mod.mswm@std[2]
+    P           = mod.mswm@transMat
+    resid[(p+1):T,1,1:2] = mod.mswm@Fit@error
+  }
+
+  if (mod.mswm@Coef[1,1] > mod.mswm@Coef[2,1]) {
+
+    Bo[,,1,2:1] = mod.mswm@Coef[,3]
+    Co[,,2]     = unlist(mod.mswm@Coef[1,-3])
+    Co[,,1]     = unlist(mod.mswm@Coef[2,-3])
+    Sigmao[,,2] = mod.mswm@std[1]
+    Sigmao[,,1] = mod.mswm@std[2]
+    P[2:1,2:1]           = mod.mswm@transMat
+    resid[(p+1):T,1,2:1] = mod.mswm@Fit@error
+  }
+
+  logLikel    = -mod.mswm@Fit@logLikel
+  resid[(p+1):T,1,] = mod.mswm@Fit@error
+  AIC      = (2*ncol(mod.mswm@Coef))*2 - 2*logLikel
+  BIC      = (2*ncol(mod.mswm@Coef))*log(T-p) - 2*logLikel
+
+  PARAM   = list(Bo,Co,Sigmao,P);names(PARAM) = c("Bo","Co","Sigma","P")
+  INFOC   = list(AIC,BIC)
+  EXTRA   = NA
+  Model   = list(Model$H_PARAM,PARAM,INFOC,Model$ENDOG,Model$EXOG,resid,Model$RD,Model$INI,EXTRA)
+  names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+  return(Model)
+}
+
+Cshare = NA
+PRP.PARAM = list(Cshare)
+
+prp = function(Model,PRP.PARAM)
+{
+  Bo = Model$PARAM[[1]]
+  Co = Model$PARAM[[2]]
+  n = Model$H_PARAM[[1]]
+  p = Model$H_PARAM[[2]]
+  BB = Bo;
+  Cshare=c(BB[1,1,1,1]-BB[1,1,1,2],Co[1,1,1]-Co[1,1,2])
+
+  results = list(Cshare)
+  names(results) = c("Cshare")
+  return(results)
+}
+
+
+
+
+
+DGP = MODEL.DGP(Model=Model,T=300,M=1)
+#Model = DGP
+EST <- MODEL.EST(DGP)
+
+Cshareo = prp(EST,PRP.PARAM)
+
+
+PRP.PARAM = list(Cshareo); names(PRP.PARAM) = c("Cshareo")
+
+PRP = MODEL.PRP(EST,PRP.PARAM)
+
+Method = "norm"
+nrun   = 200
+
+bootresult = MODEL.BOOT(Model=EST,PRP,PRP.PARAM,nrun=200,Method="residuals")
+
+
+SM<-Summary(OUT = bootresult,Model=EST,PRP.PARAM)
+```
 
 ## Summary
 

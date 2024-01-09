@@ -47,7 +47,7 @@ This example walks through a simple scenario. Its is meant to demonstrate the wo
 $$ H_o: Co = 2  \hspace{1cm} H_a: Co \ne 2. \hspace{2cm}   H_o: Sigma = 1.5  \hspace{1cm} H_a: Sigma \ne 1.5$$ 
 
 
-```{r example0, echo=FALSE}
+```{r example0, results='hide',fig.show='hide'}
 library(EMPBOOTSTRP)
 
 
@@ -176,7 +176,7 @@ $$H_0: B_{1,1}-B_{2,2}=0 \hspace{1cm} H_a: B_{1,1}-B_{2,2}\ne 0.$$
 We save the value of the bootstrapped test statistic as Cshare, and the value of the statistic under the null is saved as Cshareo. Together with nstep=25 and irf = "gen", they are parameters of the prp function stored as PRP.PARAM.  
 
 
-```{r example1, echo=FALSE}
+```{r example1, results='hide',fig.show='hide'}
 library(EMPBOOTSTRP)
 library(MRCIGVAR)
 
@@ -338,7 +338,7 @@ IRF_list <-IRF_graph(SM[[4]])
 In this example, we demonstrate bootstrapping in a cointegrated VAR model. We utilize the CIVARData and CIVARest functions from the MRCIGVAR package for the data generating process (DGP) and estimation function, respectively. In the prp function, we test a parameter restriction: $$H_0: B_{1,1,1}-B_{2,2,1}=0 \hspace{1cm} H_a: B_{1,1,1}-B_{2,2,1}\ne0 $$ 
 
 
-```{r example2, echo=FALSE}
+```{r example2, results='hide',fig.show='hide'}
 
 ##### implementation of the three functions  dgp, est, prp
 
@@ -558,7 +558,7 @@ In this example our dgp is a logit model $$y = \frac{1}{1+e^{-(Co+B_1X_1+B_2X_2)
 
 
 
-```{r example3, echo=FALSE}
+```{r example3, results='hide',fig.show='hide'}
 
 ##### set up a Model skeleton with given values for PARAM and H_PARAM.
 
@@ -715,7 +715,7 @@ where $s_t$ follow a Markov process. We use a function MSVARData for dgp, and in
 $$H_0: {b^{(0)}_1}^2-b_1^{(1)} = 0 \hspace{1cm} H_1: {b^{(0)}_1}^2-b_1^{(1)} \ne 0   $$ $$ H_0: c_o^{(0)} - c_o^{(1)}=0 C\hspace{1cm} H_1: c_o^{(0)} - c_o^{(1)} \ne 0 $$ 
 
 
-```{r example4, echo=FALSE}
+```{r example4, results='hide',fig.show='hide'}
 
 ##### set up a Model skeleton with given values for PARAM and H_PARAM.
 
