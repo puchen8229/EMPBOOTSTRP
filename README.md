@@ -6,7 +6,8 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of EMPBOOTSTRP is to …
+The goal of EMPBOOTSTRP is to provide a tool that can run bootstrap
+tests for an arbitrary and yet-to-be-defined statistical model.
 
 ## Installation
 
@@ -19,24 +20,25 @@ devtools::install_github("puchen8229/EMPBOOTSTRP")
 ```
 
 EMPBOOTSTRP is used to run bootstrap tests in an arbitrary statistical
-model. A statistical model is considered to be a list consisting of 9
-components: the endogenous variable (ENDOG), the exogenous variable
-(EXOG), the model parameters (PARAM), the hypo-parameters (H_PARAM), the
-information criteria of the model (INFOC), the residuals of the model
-(resid), the initial values (INI), the forms of residual creation RD,
-and an extra component (EXTRA).
+model. A statistical model is conceptually considered to be a list
+consisting of 9 components: the endogenous variable (ENDOG), the
+exogenous variable (EXOG), the model parameters (PARAM), the
+hypo-parameters (H_PARAM), the information criteria of the model
+(INFOC), the residuals of the model (resid), the initial values (INI),
+the forms of residual creation RD, and an extra component (EXTRA).
 
       Model = List (H_PARAM,PARAM,INFOC,ENDOG,EXOG,resid,RD,INI,EXTRA)
 
 Often, some components of the model are unknown. The statistical task is
 to complete the model using the given known components. A data
-generating function (MODEL.DGP) maps a model with given H_PARAM, PARAM,
-EXOG, and resid to the model with ENDOG. An estimation function maps a
-model with ENDOG, EXOG, and H_PARAM to the model with PARAM. A model
-selection procedure maps a model with ENDOG and EXOG to the model with
+generating function (MODEL.DGP) maps a Model with given H_PARAM, PARAM,
+EXOG, and resid to the Model with ENDOG. An estimation function maps a
+Model with ENDOG, EXOG, and H_PARAM to the Model with PARAM. A model
+selection procedure maps a Model with ENDOG and EXOG to the Model with
 H_PARAM. For an estimated model, we are often interested in certain
 particular properties of the model, such as parameter constraints,
-stability, or impulse-response functions.
+stability, or impulse-response functions. Such properties are coded as a
+function prp that maps an estimated Model to the properties PRP.
 
 ``` r
 knitr::include_graphics("functions.png")
@@ -45,7 +47,7 @@ knitr::include_graphics("functions.png")
 <img src="functions.png" width="100%" /> A bootstrap test of the
 properties PRP works as follows. For the
 ![i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;i "i")th
-bootstrap,
+bootstrapped,
 ![resid^{(i)}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;resid%5E%7B%28i%29%7D "resid^{(i)}"),
 the functions dgp, est, and prp will generate the
 ![i](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;i "i")th
@@ -58,13 +60,14 @@ The following 5 examples demonstrate how EMPBOOTSTRP is used.
 
 ## Example 0
 
-This example walks through a simple scenario. Its is meant to
-demonstrate the workflow. A bootstrap test of the population mean of a
-set of normal data is used in this simple scenario.
+This example walks through a simple scenario. It is meant to demonstrate
+the workflow. A bootstrap test of the population mean of a set of normal
+data is used in this simple scenario.
 
-![H_o: Co = 2  \hspace{1cm} H_a: Co \ne 2. \hspace{2cm}   H_o: Sigma = 1.5  \hspace{1cm} H_a: Sigma \ne 1.5](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_o%3A%20Co%20%3D%202%20%20%5Chspace%7B1cm%7D%20H_a%3A%20Co%20%5Cne%202.%20%5Chspace%7B2cm%7D%20%20%20H_o%3A%20Sigma%20%3D%201.5%20%20%5Chspace%7B1cm%7D%20H_a%3A%20Sigma%20%5Cne%201.5 "H_o: Co = 2  \hspace{1cm} H_a: Co \ne 2. \hspace{2cm}   H_o: Sigma = 1.5  \hspace{1cm} H_a: Sigma \ne 1.5")
+![H_o: Co = 2  \hspace{0.5cm} H_a: Co \ne 2. \hspace{1cm}   H_o: Sigma = 1.5  \hspace{0.5cm} H_a: Sigma \ne 1.5](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_o%3A%20Co%20%3D%202%20%20%5Chspace%7B0.5cm%7D%20H_a%3A%20Co%20%5Cne%202.%20%5Chspace%7B1cm%7D%20%20%20H_o%3A%20Sigma%20%3D%201.5%20%20%5Chspace%7B0.5cm%7D%20H_a%3A%20Sigma%20%5Cne%201.5 "H_o: Co = 2  \hspace{0.5cm} H_a: Co \ne 2. \hspace{1cm}   H_o: Sigma = 1.5  \hspace{0.5cm} H_a: Sigma \ne 1.5")
 
 ``` r
+
 library(EMPBOOTSTRP)
 #> 
 #> Attaching package: 'EMPBOOTSTRP'
@@ -151,9 +154,9 @@ Cshareo <- prp(EST,PRP.PARAM)
 PRP.PARAM = list(Cshareo); names(PRP.PARAM) = c("Cshareo")
 
 #######
+## bootstrapping
+######
 PRP <- prp(EST,PRP.PARAM)
-
-
 Method = "norm"
 nrun   = 200
 bootresult = MODEL.BOOT(EST,PRP,PRP.PARAM,nrun,Method)
@@ -184,16 +187,19 @@ steps:
       Step 2: Implementation of dgp, est, prp functions (select is optional.)
       Step 3: obtain an estimable Model skeleton DGP as the output of dgp(Model,T,M). For empirical application replace GDP$ENDOG by the empirical data.
       Step 4: obtain a complete Model skeleton EST as the output of est(Model=DGP).
-      Step 5: obtain the test statistic values (Cshareo) by Cshareo = prp(Model=EST,PRP.PARAM)
-      Step 4: run the bootstrap procedure MODEL.BOOT(Model=EST,PRP,)
+      Step 5: obtain the test statistic values (Cshareo) by setting Cshareo = prp(Model=EST,PRP.PARAM)
+      Step 6: run the bootstrap procedure MODEL.BOOT(Model=EST,PRP,)
+
+The crucial step in using EMPBOOTSTRP is the implementation of three
+functions: dgp, est, and prp. Once these three functions are completed,
+the bootstrap test becomes a routine task. The R community offers a wide
+range of packages that can be used to implement dgp and est.
 
 ## Example 1
 
 This example demonstrates how to use EMPBOOTSTRP to run bootstrap tests
 on parameter restrictions and impulse-response functions in a VAR model.
-The R community offers a wide range of packages that can be used to
-generate data and estimate parameters for various types of models. In
-this case, we utilize the MRCIGVAR package for data generation and
+In this case, we utilize MRCIGVAR package for data generation and
 parameter estimation in a VAR model. We match the parameters in the VAR
 model to the given structure of
 
@@ -223,6 +229,39 @@ library(MRCIGVAR)
 #> The following object is masked from 'package:EMPBOOTSTRP':
 #> 
 #>     rnormSIGMA
+
+
+### set up a Model skeleton with assigned PARAM and H_PARAM.
+
+ENDOG = NA
+T = 400
+n = 4
+EXOG = NA
+p = 1
+B = matrix(0,n,n*p)
+B = diag(c(0.8,0.8,0.8,0.7)); dim(B) = c(n,n,p)
+Co = c(1:4)*0.5
+type ="const"
+H_PARAM = list(n,p,type)
+Sigma   = NA
+PARAM   = list(B,Co,Sigma)
+
+resid   = NA
+RD      = c("norm")
+#INI     = ENDOG[1:p,]
+INI = NA
+AIC = NA
+BIC = NA
+INFOC = list(AIC,BIC)
+EXTRA = NA
+Model = list(H_PARAM,PARAM,INFOC,ENDOG,EXOG,resid,RD,INI,EXTRA)
+names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+
+
+
+
+
+
 
 ##### implementation of the three functions  dgp, est, prp
 
@@ -261,7 +300,7 @@ dgp = function(Model,T, M=2)
       resid   = res_d$resid
       RD      = Model$RD
       INI     = Model$INI
-      EXTRA   = res_d
+      EXTRA   = res_d        ## The component EXTRA is used to pass the object used in MRCIGVAR package
       Model   = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
       names(Model) = c("H_PARAM","PARAM","INFOC", "ENDOG","EXOG","resid","RD","INI","EXTRA")
     return(Model)
@@ -290,12 +329,10 @@ est = function(Model) {
 
 
 
-
-# Model = EST
 nstep = 25
 
 irf = "gen"
-Cshareo =c(0)
+Cshareo = c(0)    ## a dummy value used in defining PRP.PARAM
 PRP.PARAM = list(nstep,irf,Cshareo); names(PRP.PARAM) = c("nstep","irf","Cshareo")
 
 prp = function(Model,PRP.PARAM)
@@ -320,37 +357,11 @@ prp = function(Model,PRP.PARAM)
 
 
 
-ENDOG = NA
-T = 400
-n = 4
-EXOG = NA
-p = 1
-B = matrix(0,n,n*p)
-B = diag(c(0.8,0.8,0.8,0.7)); dim(B) = c(n,n,p)
-Co = c(1:4)*0.5
-type ="const"
-H_PARAM = list(n,p,type)
-Sigma   = NA
-PARAM   = list(B,Co,Sigma)
-
-resid   = NA
-RD      = c("norm")
-#INI     = ENDOG[1:p,]
-INI = NA
-AIC = NA
-BIC = NA
-INFOC = list(AIC,BIC)
-EXTRA = NA
-Model = list(H_PARAM,PARAM,INFOC,ENDOG,EXOG,resid,RD,INI,EXTRA)
-names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
-
-
-
 #######
-# dgp(Model=Model,T=200,M=4)
+
 
 DGP = MODEL.DGP(Model=Model,T=200,M=4)
-# Model = DGP
+
 EST <- MODEL.EST(Model=DGP)
 
 
@@ -359,7 +370,6 @@ Cshareo =  prp(EST,PRP.PARAM)$Cshare
 
 
 PRP.PARAM = list(nstep,irf,Cshareo); names(PRP.PARAM) = c("nstep","irf","Cshareo")
-
 
 Method = "norm"
 nrun   = 200
@@ -375,7 +385,7 @@ IRF_list <-IRF_graph(SM[[4]])
 ## Example 2
 
 In this example, we demonstrate bootstrapping in a cointegrated VAR
-model. We utilize the CIVARData and CIVARest functions from the MRCIGVAR
+model. We utilize the CIVARData and CIVARest functions from MRCIGVAR
 package for the data generating process (DGP) and estimation function,
 respectively. In the prp function, we test a parameter restriction:
 
@@ -386,19 +396,20 @@ respectively. In the prp function, we test a parameter restriction:
 ##### implementation of the three functions  dgp, est, prp
 
 
+### set up a Model skeleton with assigned PARAM, H_PARAM, RD="norm" for simulated resid
+
 ENDOG = NA
 EXOG  = NA
 n     = 4
 p     = 2
-B     = c(1:(n*n*p))*NA; dim(B) = c(n,n,p)     
+B     = c(1:(n*n*p))*NA; dim(B) = c(n,n,p)     #B = c(0.5,0,0,0.4,0.2,0,0,0.2); dim(B) = c(n,n,p)
 Co    = NA
-Sigma = NA                       #Sigma = diag(c(1,2))
+Sigma = NA                                     #Sigma = diag(c(1,2))
 type  = "const"
 crk   = 2
 H_PARAM = list(n,p,type,crk)
 alpha   = NA
 beta    = NA
-
 PARAM   = list(alpha,beta,B,Co,Sigma); names(PARAM) = c("alpha","beta","B","Co","Sigma")
 AIC     = NA
 BIC     = NA
@@ -409,6 +420,7 @@ INI     = NA                                             #INI     = ENDOG[1:p,]
 EXTRA   = NA                                   #an extra element to for convenience
 Model = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
 names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
+
 
 T = 200
 
@@ -489,24 +501,8 @@ est = function(Model) {
   return(Model)
 }
 
-#MODEL.EST <- function(Model)
-#{
-#
-#  estimate = est(Model)
-#  Model$PARAM = estimate$PARAM
-#  Model$resid = estimate$resid
-#  Model$INFOC = estimate$INFOC
-#  return(Model)
-#}
 
 
-### not run
-#DGP = MODEL.DGP(Model,T=200,M=2)
-#Model = DGP
-#EST <- MODEL.EST(DGP)
-
-
-### not run
 nstep = 20
 irf = "gen"
 Cshareo = NA
@@ -533,40 +529,6 @@ prp = function(Model,PRP.PARAM)
 }
 
 
-### not run
-#DGP = MODEL.DGP(Model,T=200,M=2)
-#Model = DGP
-#EST <- MODEL.EST(DGP)
-#prp(EST,PRP.PARAM)
-
-####### Application a typical procedure: Model construction selection estimation validation application
-#######                                        MODEL.DGP    MODEL.SELECT, MODEL.EST, MODEL.BOOT, MODEL.PRP
-
-ENDOG = NA
-EXOG  = NA
-n     = 4
-p     = 2
-B     = c(1:(n*n*p))*NA; dim(B) = c(n,n,p)     #B = c(0.5,0,0,0.4,0.2,0,0,0.2); dim(B) = c(n,n,p)
-Co    = NA
-Sigma = NA                                     #Sigma = diag(c(1,2))
-type  = "const"
-crk   = 2
-H_PARAM = list(n,p,type,crk)
-alpha   = NA
-beta    = NA
-PARAM   = list(alpha,beta,B,Co,Sigma); names(PARAM) = c("alpha","beta","B","Co","Sigma")
-AIC     = NA
-BIC     = NA
-INFOC   = list(AIC,BIC)
-resid   = NA
-RD      = c("norm")
-INI     = NA                                             #INI     = ENDOG[1:p,]
-EXTRA   = NA                                   #an extra element to for convenience
-Model = list(H_PARAM,PARAM,INFOC, ENDOG,EXOG,resid,RD,INI,EXTRA)
-names(Model) = c("H_PARAM","PARAM","INFOC","ENDOG","EXOG","resid","RD","INI","EXTRA")
-
-
-#######
 
 DGP = MODEL.DGP(Model=Model,T=200,M=4)
 
@@ -604,7 +566,7 @@ In this example our dgp is a logit model
 
 ![H_0: B_1^2-B_2 = 0 \hspace{1cm} H_1: B_1^2-B_2 \ne 0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_0%3A%20B_1%5E2-B_2%20%3D%200%20%5Chspace%7B1cm%7D%20H_1%3A%20B_1%5E2-B_2%20%5Cne%200 "H_0: B_1^2-B_2 = 0 \hspace{1cm} H_1: B_1^2-B_2 \ne 0")
 
-![H_0: Co = 1 \hspace{1cm} H_1: Co \ne 0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_0%3A%20Co%20%3D%201%20%5Chspace%7B1cm%7D%20H_1%3A%20Co%20%5Cne%200 "H_0: Co = 1 \hspace{1cm} H_1: Co \ne 0")
+![H_0: Co = 1 \hspace{1cm} H_1: Co \ne 1](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_0%3A%20Co%20%3D%201%20%5Chspace%7B1cm%7D%20H_1%3A%20Co%20%5Cne%201 "H_0: Co = 1 \hspace{1cm} H_1: Co \ne 1")
 
 ``` r
 
@@ -1017,8 +979,8 @@ est = function(Model) {
   return(Model)
 }
 
-Cshare = NA
-PRP.PARAM = list(Cshare)
+Cshareo = NA
+PRP.PARAM = list(Cshareo)
 
 prp = function(Model,PRP.PARAM)
 {
