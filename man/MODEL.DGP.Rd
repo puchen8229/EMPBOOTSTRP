@@ -7,16 +7,16 @@
 MODEL.DGP(Model, T, M)
 }
 \arguments{
-\item{Model}{object of an incomplete Model with known H_PARAM, PARAM,EXOG,resid and RD (For RD="norm" resid will be gnerated for RD="resid" resid must be provides.}
+\item{Model}{object of an incomplete Model with known H_PARAM, PARAM,EXOG,resid and RD (For RD="norm" resid will be generated for RD="resid" resid must be provides).}
 
 \item{T}{the number of data to be generated. If EXOG is given, T must be consistent with the number of observations in EXOG.}
 
-\item{M}{the dimension of the data to be generated}
+\item{M}{the dimension of the data to be generated.}
 }
 \value{
 an object of Model with generated ENDOG and resid.
 }
 \description{
-This function completes the Model by generating the endogeous variables for given model parametrs and given/generated residuals.
+This function completes the Model by generating the endogenous variables for given model parameters and given/generated residuals.
 In application it will be implemented through dgp(Model,T,M).
 }

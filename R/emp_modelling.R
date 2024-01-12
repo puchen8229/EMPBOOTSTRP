@@ -1,11 +1,11 @@
 #' MODEL.DGP
 #'
-#' This function completes the Model by generating the endogeous variables for given model parametrs and given/generated residuals.
+#' This function completes the Model by generating the endogenous variables for given model parameters and given/generated residuals.
 #' In application it will be implemented through dgp(Model,T,M).
 #'
-#'@param Model object of an incomplete Model with known H_PARAM, PARAM,EXOG,resid and RD (For RD="norm" resid will be gnerated for RD="resid" resid must be provides.
+#'@param Model object of an incomplete Model with known H_PARAM, PARAM,EXOG,resid and RD (For RD="norm" resid will be generated for RD="resid" resid must be provides).
 #'@param T the number of data to be generated. If EXOG is given, T must be consistent with the number of observations in EXOG.
-#'@param M the dimension of the data to be generated
+#'@param M the dimension of the data to be generated.
 #'@return an object of Model with generated ENDOG and resid.
 #'
 #'@export
@@ -19,7 +19,7 @@ MODEL.DGP = function(Model,T,M)
 
 #' MODEL.EST
 #'
-#' This function completes the Model by providing PARAM and resid for given endogeneous and exogeneous variables.
+#' This function completes the Model by providing PARAM and resid for given endogenous and exogenous variables.
 #' In application it will be implemented through est(Model).
 #'
 #'@param Model object of an incomplete Model with known H_PARAM, ENDOG and EXOG.
@@ -59,44 +59,16 @@ MODEL.PRP = function(Model,PRP.PARAM)
 
 #' MODEL.BOOT
 #'
-#' This function bootstraps the Properties of a complete Model inlcuding bootstrap of the estimated parametrs. Often it is used for model validation purpose.
+#' This function bootstraps the Properties of a complete Model including bootstrap of the estimated parameters. Often it is used for model validation purpose.
 #'
-#' @param Model object of a complete Model with known RD. RD="resid" non-parametric bootstrap, RD="norm" parametric boostrap.
-#' @param PRP object of the MODEL.PRO output which will be boostraped.
+#' @param Model object of a complete Model with known RD. RD="resid" non-parametric bootstrap, RD="norm" parametric bootstrap.
+#' @param PRP object of the MODEL.PRO output which will be bootstrapped.
 #' @param PRP.PARAM the parameter that is used to calculate the PRP.
-#' @param nrun number of bootrap runs
-#' @param Method a parameter that determines how the boostrap samples are generated.
-#' @return a list of bootstraped PARAM, bootstraped resid and bootstraped PRP.
-#' @examples
-#' ENDOG = NA
-#' n = 1
-#' EXOG = NA
-#' Co = 2
-#' Sigma = 1.5
-#' H_PARAM = list(n)
-#' PARAM   = list(Co,Sigma);names(PARAM) = c("Co","Sigma")
-#' resid   = NA
-#' RD      = c("norm")
-#' INI = NA
-#' AIC = NA
-#' BIC = NA
-#' INFOC = list(AIC,BIC)
-#' EXTRA = NA
-#' Model = list(H_PARAM,PARAM,INFOC,ENDOG,EXOG,resid,RD,INI,EXTRA)
-#' names(Model) = c("H_PARAM","PARAM", "INFOC" ,"ENDOG","EXOG","resid',"RD","INI","EXTRA")
-#'
-#'
-#' DGP = MODEL.DGP(Model=Model,T=200,M=1)
-#' EST <- MODEL.EST(DGP)
-#' prp(EST,PRP.PARAM)
-#' Cshareo =c(0,0)
-#' PRP.PARAM = list(Cshareo); names(PRP.PARAM) = c("Cshareo")
-#' Method = "norm"
-#' nrun   = 200
-#' dim(EST$resid)
-#' bootresult = MODEL.BOOT(EST,PRP,PRP.PARAM,nrun,Method)
-#' SM<-Summary(OUT = bootresult,Model=EST,PRP.PARAM)
+#' @param nrun number of bootstrap runs
+#' @param Method a parameter that determines how the bootstrap samples are generated.
+#' @return a list of bootstrapped PARAM, bootstrapped resid and bootstrapped PRP.
 #' @export
+#'
 MODEL.BOOT <- function(Model,PRP,PRP.PARAM,nrun,Method)
 {
   T = dim(as.matrix(Model$ENDOG))[1]
@@ -153,9 +125,9 @@ MODEL.SELECT = function(Model,H_PARAML,K)
 
 #' BOOT
 #'
-#' This creates a list of PRP object to contain the bootrap results.
+#' This creates a list of PRP object to contain the bootstrap results.
 #'
-#'@param C list of resid used as container for bootstraped residuals
+#'@param C list of resid used as container for bootstrapped residuals
 #'@param nrun number of bootstrap runs.
 #'@return an array to contain the list of bootstrap and number of bootstrap runs.
 #'@export

@@ -13,6 +13,6 @@ MODEL.EST(Model)
 Model object with estimated PARAM, INFOC, and resid.
 }
 \description{
-This function completes the Model by providing PARAM and resid for given endogeneous and exogeneous variables.
+This function completes the Model by providing PARAM and resid for given endogenous and exogenous variables.
 In application it will be implemented through est(Model).
 }

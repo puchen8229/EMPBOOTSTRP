@@ -7,7 +7,7 @@
 BOOT(C, nrun)
 }
 \arguments{
-\item{C}{list of resid used as container for bootstraped residuals}
+\item{C}{list of resid used as container for bootstrapped residuals}
 
 \item{nrun}{number of bootstrap runs.}
 }
@@ -15,5 +15,5 @@ BOOT(C, nrun)
 an array to contain the list of bootstrap and number of bootstrap runs.
 }
 \description{
-This creates a list of PRP object to contain the bootrap results.
+This creates a list of PRP object to contain the bootstrap results.
 }

@@ -78,7 +78,7 @@ library(EMPBOOTSTRP)
 
 T = 200
 
-Data = rnorm(T)*1.2+1.9    #### this is to simulate  a set of empirical data. 
+Data = rnorm(T)*1.2+1.9    #### this is to simulate a set of empirical data. 
 
 #### set up a Model skeleton with an arbitrarily valued PARAM and H_PARAM
 
@@ -120,7 +120,6 @@ dgp = function(Model,T, M=1)
 }
 
 est = function(Model=DGP) {
-  ## this is a program estimating VAR(p) with exogenous variables via LS
   n       = Model$H_PARAM[[1]]
   Y       = Model$ENDOG
   Co      = mean(Y)
@@ -157,7 +156,7 @@ prp = function(Model,PRP.PARAM)
 
 DGP = MODEL.DGP(Model=Model,T=200,M=1)
 
-### replacing DGP$ENDOG by Data such that we est is operating on empirical data
+### replacing DGP$ENDOG by Data such that est is operating on the empirical data
 
 DGP$ENDOG <- as.matrix(Data)
 
@@ -179,6 +178,7 @@ Method = "norm"
 nrun   = 200
 bootresult = MODEL.BOOT(EST,PRP,PRP.PARAM,nrun,Method)
 
+### Summary creates a table that summarizes the bootstrap results.
 
 SM<-Summary(OUT = bootresult,Model=EST,PRP.PARAM)
 ```
@@ -201,8 +201,8 @@ of the bootstrapped test statistics in Cshare (the lase two lines).
 Using EMPBOOTSTRP to run a statistical test consists of the following
 steps:
 
-      step 1: set up a Model skeleton with assigned H_PARAM, PARAM, resid (or RD) values.
-      Step 2: Implementation of dgp, est, prp functions (select is optional.)
+      step 1: set up a Model skeleton with assigned H_PARAM, PARAM, resid values. For RD="resid" given resid will be used, otherwise resid will be generated.
+      Step 2: implementation of dgp, est, prp functions (select is optional.)
       Step 3: obtain an estimable Model skeleton DGP as the output of dgp(Model,T,M). For empirical application replace GDP$ENDOG by the empirical data.
       Step 4: obtain a complete Model EST as the output of est(Model=DGP).
       Step 5: obtain the test statistic values (Cshareo) by setting Cshareo = prp(Model=EST,PRP.PARAM)
@@ -359,9 +359,6 @@ prp = function(Model,PRP.PARAM)
       Cshare=c(BB[1,1,1]-BB[2,2,1])
       irf = PRP.PARAM[[2]]
       nstep = PRP.PARAM[[1]]
-      IRF   = matrix(0,n,n*nstep)
-      dim(IRF) = c(n,n,nstep);
-      dim(B) = c(n,n,p);
       resid = Model$resid
       sigma0 = t(resid)%*%resid/(nrow(resid)-ncol(resid)*p)
       IRF  <- irf_B_sigma(B,sigma0,nstep,irf=irf)
@@ -541,9 +538,6 @@ prp = function(Model,PRP.PARAM)
   Cshare=c(B[1,1,1]-B[2,2,1])
   irf = PRP.PARAM[[2]]
   nstep = PRP.PARAM[[1]]
-  IRF   = matrix(0,n,n*nstep)
-  dim(IRF) = c(n,n,nstep);
-  dim(B) = c(n,n,p);
   resid = Model$resid
   sigma0 = t(resid)%*%resid/(nrow(resid)-ncol(resid)*p)
   IRF  <- irf_B_sigma(B,sigma0,nstep,irf=irf)
@@ -591,11 +585,11 @@ IRF_list <-IRF_graph(SM[[3]])
 
 ## Example 3
 
-In this example our dgp is a logit model
+In this example, the dgp is a logit model
 
-![y = \frac{1}{1+e^{-(Co+B_1X_1+B_2X_2)}}](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y%20%3D%20%5Cfrac%7B1%7D%7B1%2Be%5E%7B-%28Co%2BB_1X_1%2BB_2X_2%29%7D%7D "y = \frac{1}{1+e^{-(Co+B_1X_1+B_2X_2)}}")
+![y = \frac{1}{1+e^{-(Co+B_1X_1+B_2X_2)}}.](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;y%20%3D%20%5Cfrac%7B1%7D%7B1%2Be%5E%7B-%28Co%2BB_1X_1%2BB_2X_2%29%7D%7D. "y = \frac{1}{1+e^{-(Co+B_1X_1+B_2X_2)}}.")
 
-. We use the glm function in R for est, and in prp we want to test
+We use glm function in R for est, and in prp we want to test
 
 ![H_0: B_1^2-B_2 = 0 \hspace{1cm} H_1: B_1^2-B_2 \ne 0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_0%3A%20B_1%5E2-B_2%20%3D%200%20%5Chspace%7B1cm%7D%20H_1%3A%20B_1%5E2-B_2%20%5Cne%200 "H_0: B_1^2-B_2 = 0 \hspace{1cm} H_1: B_1^2-B_2 \ne 0")
 
@@ -701,8 +695,6 @@ Cshare = NA
 PRP.PARAM = list(Cshare)
 
 
-
-
 prp = function(Model,PRP.PARAM)
 {
   Bo = Model$PARAM[[1]]
@@ -767,8 +759,6 @@ we test
 ![H_0: c_o^{(0)} - c_o^{(1)}=0 C\hspace{1cm} H_1: c_o^{(0)} - c_o^{(1)} \ne 0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;H_0%3A%20c_o%5E%7B%280%29%7D%20-%20c_o%5E%7B%281%29%7D%3D0%20C%5Chspace%7B1cm%7D%20H_1%3A%20c_o%5E%7B%280%29%7D%20-%20c_o%5E%7B%281%29%7D%20%5Cne%200 "H_0: c_o^{(0)} - c_o^{(1)}=0 C\hspace{1cm} H_1: c_o^{(0)} - c_o^{(1)} \ne 0")
 
 ``` r
-
-##### set up a Model skeleton with given values for PARAM and H_PARAM.
 
 library(MSwM)
 #> Warning: package 'MSwM' was built under R version 4.0.5
